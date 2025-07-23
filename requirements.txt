@@ -1,0 +1,5 @@
+mss
+sounddevice
+scipy
+pynput
+psycopg2

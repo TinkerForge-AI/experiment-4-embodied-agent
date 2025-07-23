@@ -14,7 +14,7 @@
 - **Visual Input:**  
   - Use screen capture libraries (e.g., OpenCV, mss) to grab frames from the Eastshade window.
 - **Audio Input:**  
-  - Use PyAudio or similar to capture system/game audio.
+  - Use sounddevice + scip or similar to capture system/game audio.
 - **Keyboard/Mouse Input:**  
   - Use pynput, pyautogui, or OS hooks to both capture and inject keyboard/mouse events.
   - Map agent actions to game controls (movement, interaction, menu navigation).

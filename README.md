@@ -27,10 +27,19 @@ This repository documents the design and development of an embodied agent framew
 - Synchronize and buffer multi-modal data for agent training.
 - Log all actions, states, and events for analysis and curriculum refinement.
 
+
+## Recent Progress
+- Input capture modules for visual, audio, keyboard, and mouse are implemented and tested.
+- Input orchestrator synchronizes multi-modal data into unified agent observations.
+- PostgreSQL + TimescaleDB integration for high-throughput, time-series data storage.
+- Database credentials and configuration now loaded securely from a `.env` file (see template in repo).
+- `.gitignore` updated to exclude sensitive files and unnecessary artifacts.
+- All code refactored for modularity and security, ready for collaborative development and safe repository sharing.
+
 ## Next Steps
-- Prototype input capture and injection modules.
-- Build agent-environment interface and begin initial scripted testing.
+- Expand agent-environment interface and begin initial scripted testing.
 - Refine curriculum and success metrics as agent begins to learn.
+- Develop data retrieval and visualization tools for analysis and training.
 
 ---
 *This README is a living document and will evolve as the project progresses. For questions or collaboration, please contact the project maintainers.*
