@@ -1,0 +1,47 @@
+## Formal Requirements Document
+
+### 1. Overview
+This document outlines the cross-functional requirements for the Embodied Agent Framework project. It is intended to align expectations and responsibilities across engineering, research, product, and operations teams. The goal is to ensure the successful development, deployment, and evaluation of embodied agents in simulated environments, supporting long-term research and scalable productization.
+
+### 2. Functional Requirements
+**Sensory Input & Output**
+- The agent must receive synchronized sensory inputs: screen capture (visual), audio (auditory), keyboard and mouse (kinesthetic).
+- The agent must output actions via keyboard and mouse signals only.
+
+**Window & Environment Management**
+- The system must detect and log the game window size and screen resolution at startup and during training.
+- The agent must only receive input when the game window is in focus; training must pause if focus is lost, window is minimized, or closed.
+- The system must support multiple triggers for starting training (manual, window focus, scheduled).
+
+**Learning & Behavior**
+- The agent must continuously learn from its interactions, with the goal of developing generalizable behaviors across diverse environments.
+- The system must log agent decisions and environmental context for later analysis of emergent traits (e.g., curiosity, exploration, confusion, social behaviors).
+
+**Curriculum & Scenario Design**
+- The curriculum builder must support creation of environments that foster social interaction, empathy, and appreciation of virtual experiences.
+- The framework must enable long-term studies of agent development, supporting hypothesis-driven research into embodied learning and trait emergence.
+
+**Intervention & Data Integrity**
+- The system must detect human intervention (e.g., opening game menus) and immediately pause or stop training, logging and excluding affected data.
+- The system must monitor resource usage (CPU/GPU/RAM) and log performance metrics and lag events.
+
+### 3. Non-Functional Requirements
+- The system should minimize input/output lag and synchronize all input streams with timestamps.
+- The framework should be scalable to more complex environments and hardware setups.
+- The system should support long-term experiments (2–3 months or more) with robust logging and data integrity.
+- The framework should be extensible to support new input types, agent architectures, and multi-agent scenarios.
+
+### 4. Expected Outcomes & Success Criteria
+- The agent demonstrates measurable development of traits such as curiosity, exploration, and social interaction over extended training periods.
+- The curriculum design enables study of complex behaviors beyond language understanding, including empathy and collaboration.
+- Training data remains uncontaminated by human intervention or environment interruptions.
+- The system reliably logs all relevant events and metrics for later analysis.
+- The framework provides tools for researchers to build, modify, and evaluate curricula focused on embodied learning.
+
+### 5. Departmental Alignment & Responsibilities
+**Engineering:** Responsible for system architecture, input/output modules, environment integration, and performance monitoring.
+**Research:** Designs curricula, evaluates agent behaviors, and analyzes emergent traits and learning outcomes.
+**Product:** Ensures framework extensibility, usability, and alignment with long-term business goals.
+**Operations:** Manages hardware resources, experiment scheduling, and data integrity protocols.
+
+This requirements document is a living reference and should be updated as project scope evolves and new insights are gained.
