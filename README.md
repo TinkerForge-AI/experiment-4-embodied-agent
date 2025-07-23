@@ -35,11 +35,15 @@ This repository documents the design and development of an embodied agent framew
 - Database credentials and configuration now loaded securely from a `.env` file (see template in repo).
 - `.gitignore` updated to exclude sensitive files and unnecessary artifacts.
 - All code refactored for modularity and security, ready for collaborative development and safe repository sharing.
+- Robust window focus detection using Linux desktop tools (`xprop`, `wmctrl`), supporting multi-monitor setups and reliable agent gating.
+- Agent-environment interface fully integrated and tested: agent can observe, act, and synchronize with the environment only when the correct window is focused.
+- Integration test script (`test/test_agent_env_interface.py`) verifies multi-modal input, orchestrator, window manager, and action dispatch.
+- Project is now ready for agent design: next step is to implement agent logic and curriculum for learning and evaluation.
 
 ## Next Steps
-- Expand agent-environment interface and begin initial scripted testing.
-- Refine curriculum and success metrics as agent begins to learn.
-- Develop data retrieval and visualization tools for analysis and training.
+- Design and implement the first agent (scripted, rule-based, or RL) using the integrated environment interface.
+- Develop curriculum scenarios and success metrics to guide agent learning and evaluation.
+- Expand logging and visualization tools for agent actions, observations, and performance.
 
 ---
 *This README is a living document and will evolve as the project progresses. For questions or collaboration, please contact the project maintainers.*
