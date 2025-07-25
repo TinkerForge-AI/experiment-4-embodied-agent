@@ -25,14 +25,23 @@ class VisualInputCapture:
         self.output_dir = output_dir
         self.frame_rate = frame_rate
         os.makedirs(self.output_dir, exist_ok=True)
+        self.paused = False
 
     def get_frame(self):
         """
         Capture and return a single frame from the specified region.
+        Returns None if paused.
         """
+        if self.paused:
+            return None
         with mss.mss() as sct:
             img = sct.grab(self.region)
             return img  # You may convert to numpy array if needed
+    def pause(self):
+        self.paused = True
+
+    def resume(self):
+        self.paused = False
 
     def capture_frames(self, duration=5):
         """

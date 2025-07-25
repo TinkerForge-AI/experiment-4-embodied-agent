@@ -52,7 +52,14 @@ class AgentEnvInterface:
                 dx, dy = action['move']
                 self.mouse.move(dx, dy)
             if 'click' in action:
-                button = action['click']
+                from pynput.mouse import Button
+                button_str = action['click']
+                if button_str == 'left':
+                    button = Button.left
+                elif button_str == 'right':
+                    button = Button.right
+                else:
+                    raise ValueError(f"Unknown mouse button: {button_str}")
                 self.mouse.click(button)
 
     def get_observation(self):

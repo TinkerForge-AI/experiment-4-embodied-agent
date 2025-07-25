@@ -15,6 +15,12 @@ import os
 from datetime import datetime
 
 class InputCapture:
+    def pause(self):
+        if hasattr(self, 'keyboard_listener') and self.keyboard_listener:
+            self.keyboard_listener.stop()
+        if hasattr(self, 'mouse_listener') and self.mouse_listener:
+            self.mouse_listener.stop()
+        print("[InputCapture] Paused keyboard and mouse listeners.")
     def __init__(self):
         self.keyboard_controller = keyboard.Controller()
         self.mouse_controller = mouse.Controller()

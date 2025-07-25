@@ -21,6 +21,15 @@ class AgentObservation:
         self.events = events                  # list of raw events in this timestep
 
 class InputOrchestrator:
+    def pause(self):
+        """Pause all input capture systems."""
+        if hasattr(self.video_capture, 'pause'):
+            self.video_capture.pause()
+        if hasattr(self.audio_capture, 'pause'):
+            self.audio_capture.pause()
+        if hasattr(self.input_capture, 'pause'):
+            self.input_capture.pause()
+        print("[InputOrchestrator] Paused all input capture systems.")
     def __init__(self, video_capture, audio_capture, input_capture, timestep=1/60):
         self.video_capture = video_capture      # e.g., VisualInputCapture instance
         self.audio_capture = audio_capture      # e.g., AudioInputCapture instance
@@ -31,19 +40,33 @@ class InputOrchestrator:
     def get_observation(self):
         now = time.time()
         timestamp = datetime.now().isoformat(sep=' ', timespec='microseconds')
+        video_frame = None
         if self.video_capture:
             video_frame = self.video_capture.get_frame()
+            if video_frame is not None:
+                try:
+                    frame_bytes = video_frame.rgb if hasattr(video_frame, 'rgb') else None
+                except Exception as e:
+                    print(f"[ERROR] Could not access video_frame.rgb: {e}")
+            else:
+                print("[WARN] video_frame is None!")
         audio_chunk = self.audio_capture.get_chunk(int(44100 * self.timestep))
         keyboard_state, mouse_state = self.input_capture.get_current_state()
         events = self.input_capture.get_events_since(self.last_time, now)
         self.last_time = now
         obs = {}
         # Visual
-        if self.video_capture:
-            frame = self.video_capture.get_frame()
+        if self.video_capture and video_frame is not None:
             frame_path = os.path.join(self.video_capture.output_dir, f"frame_{timestamp}.png")
-            mss.tools.to_png(frame.rgb, frame.size, output=frame_path)
-            obs['visual_frame_path'] = frame_path
+            try:
+                mss.tools.to_png(video_frame.rgb, video_frame.size, output=frame_path)
+                obs['visual_frame_path'] = frame_path
+                obs['video_frame'] = video_frame.rgb  # Add raw bytes for DB
+            except Exception as e:
+                print(f"[ERROR] Could not save frame or extract bytes: {e}")
+                obs['video_frame'] = None
+        else:
+            obs['video_frame'] = None
         obs['timestamp'] = timestamp
         # Store audio as numpy array in memory, serialize for DB
         obs['audio_chunk'] = audio_chunk
@@ -52,6 +75,7 @@ class InputOrchestrator:
         obs['keyboard_state'] = keyboard_state
         obs['mouse_state'] = mouse_state
         obs['events'] = events
+        print(f"[DEBUG] Final obs['video_frame'] type: {type(obs['video_frame'])}, length: {len(obs['video_frame']) if obs['video_frame'] is not None else 'NULL'}")
         return obs
 
     def stream_observations(self, duration=1.0):

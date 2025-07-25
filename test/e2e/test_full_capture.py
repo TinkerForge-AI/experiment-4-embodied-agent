@@ -3,6 +3,9 @@ test/test_full_capture.py
 
 Comprehensive test: Runs all input capture systems, synchronizes data for 5 seconds, and inserts observations into the database.
 """
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 
 import time
 import psycopg2
@@ -11,9 +14,6 @@ from input.input_orchestrator import InputOrchestrator
 from visual.visual_capture import VisualInputCapture
 from audio.audio_capture import AudioInputCapture
 from input.input_capture import InputCapture
-import sys
-import os
-sys.path.append(os.path.dirname(os.path.abspath(__file__)) + '/../')
 
 def run_full_capture_test(dbname='embodied_agent', user='agent', password='agent', host='localhost', duration=5.0, timestep=1/60):
     # Example region for visual input (customize as needed)

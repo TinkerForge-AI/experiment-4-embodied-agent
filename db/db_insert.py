@@ -26,6 +26,15 @@ def insert_observation(conn, observation):
     observation: AgentObservation object
     conn: psycopg2 connection
     """
+    video_frame = observation.get('video_frame')
+    audio_chunk = observation.get('audio_chunk')
+    print(f"[DB DEBUG] Inserting observation:")
+    print(f"  timestamp: {observation['timestamp']}")
+    print(f"  video_frame type: {type(video_frame)}, length: {len(video_frame) if video_frame is not None else 'NULL'}")
+    print(f"  audio_chunk type: {type(audio_chunk)}, shape: {audio_chunk.shape if hasattr(audio_chunk, 'shape') else 'N/A'}")
+    print(f"  keyboard_state: {observation.get('keyboard_state')}")
+    print(f"  mouse_state: {observation.get('mouse_state')}")
+    print(f"  events: {observation.get('events')}")
     with conn.cursor() as cur:
         cur.execute(
             """
@@ -35,13 +44,11 @@ def insert_observation(conn, observation):
             """,
             (
                 observation['timestamp'],
-                observation.get('video_frame'),   # Should be bytes
-                observation.get('audio_chunk').tobytes() if observation.get('audio_chunk') is not None else None,
+                psycopg2.Binary(video_frame) if video_frame is not None else None,
+                audio_chunk.tobytes() if audio_chunk is not None else None,
                 json.dumps(observation.get('keyboard_state')),
                 json.dumps(observation.get('mouse_state')),
                 json.dumps(observation.get('events'))
-                # Store shape and dtype for reconstruction
-                # You may want to add columns to your DB for audio_shape and audio_dtype
             )
         )
     conn.commit()

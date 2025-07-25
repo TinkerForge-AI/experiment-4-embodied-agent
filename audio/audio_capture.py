@@ -28,14 +28,23 @@ class AudioInputCapture:
         self.channels = channels
         self.segment_duration = segment_duration
         os.makedirs(self.output_dir, exist_ok=True)
+        self.paused = False
 
     def get_chunk(self, num_samples):
         """
         Capture and return a chunk of audio samples.
+        Returns zeros if paused.
         """
+        if self.paused:
+            return np.zeros((num_samples, self.channels), dtype='int16')
         audio = sd.rec(num_samples, samplerate=self.samplerate, channels=self.channels, dtype='int16')
         sd.wait()
         return audio
+    def pause(self):
+        self.paused = True
+
+    def resume(self):
+        self.paused = False
 
     def capture_segments(self, total_duration=10):
         """

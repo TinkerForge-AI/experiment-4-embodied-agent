@@ -4,7 +4,10 @@ test/test_agent_env_interface.py
 Integration test: Runs the full agent-environment interface loop, capturing multi-modal observations and sending dummy actions to the game (via pynput). Verifies orchestrator control, window focus logic, and action dispatch.
 """
 
+import sys
+import os
 import time
+sys.path.append(os.path.join(os.path.dirname(__file__), '../..'))
 from agent_env_interface.agent_env_interface import AgentEnvInterface
 from input.input_orchestrator import InputOrchestrator
 from visual.visual_capture import VisualInputCapture
@@ -106,7 +109,7 @@ if __name__ == "__main__":
         print(f"ID: {win['id']} | Title: {win['title']}")
 
     # Quick focus test loop
-    test_wm = RealWindowManager(target_id="0x3e00004")
+    test_wm = RealWindowManager(target_id="0x2c00004")
     print("Starting window focus test. Press Ctrl+C to exit.")
     last_status = None
     try:
