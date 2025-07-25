@@ -196,7 +196,7 @@ We welcome issues, feature requests, and pull requests! Please:
 
 ## 🌐 Project Links
 
-- [GitHub Repository](https://github.com/dchisholm125/experiment-4-embodied-agent)
+- [TinkerForge AI](https://tinkerforge.ai/blog/experiment-4/)
 
 ---
 
