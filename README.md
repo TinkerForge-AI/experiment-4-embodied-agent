@@ -1,3 +1,40 @@
+# 🧠 Visual Perception Pipeline (Session Summary 7/25/2025)
+
+### Session Achievements
+- Implemented a robust visual perception pipeline in `visual/perception.py` for embodied agents.
+- Added feature extractors for edge density, dominant color, motion/change detection, light/dark adaptation, visual attention (saliency), text reading (OCR), and object recognition (YOLOv3).
+- Updated the database schema to store all extracted features for each frame.
+- Validated the pipeline on real images, confirming detection of people, cell phones, and text.
+
+### How to Use
+1. Place your test image (e.g., `test_image.jpg`) in the project directory.
+2. Run the perception script:
+   ```bash
+   python visual/perception.py
+   ```
+3. The script will print a dictionary of extracted features for the image.
+4. Integrate the output with your database using the provided schema (see `schema.sql`).
+
+#### Example Output
+```
+Observation from image:
+edges: many
+dominant_color: red
+motion_detected: False
+change_detected: False
+light_dark: bright
+visual_attention: low
+text: See You DON'T Ask THE ANSWER
+objects: ['person']
+```
+
+### Notes
+- Object detection uses YOLOv3 (COCO dataset); accuracy depends on image content and model limitations.
+- Text reading uses pytesseract; install Tesseract OCR for full functionality.
+- Visual attention requires OpenCV with contrib modules.
+- All features are designed for rapid prototyping and agent decision logic.
+
+---
 
 # 🧑‍💻 experiment-4-embodied-agent
 *Experiment 4: The Embodied Agent Framework*

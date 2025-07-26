@@ -8,6 +8,16 @@ CREATE TABLE agent_observations (
     keyboard_state JSONB,
     mouse_state JSONB,
     events JSONB,
+    -- Visual perception features
+    edges TEXT,
+    dominant_color TEXT,
+    motion_detected BOOLEAN,
+    change_detected BOOLEAN,
+    light_dark TEXT,
+    visual_attention TEXT,
+    text TEXT,
+    npc_detected BOOLEAN,
+    objects JSONB,
     PRIMARY KEY (id, timestamp)
 );
 
