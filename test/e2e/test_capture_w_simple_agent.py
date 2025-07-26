@@ -24,11 +24,16 @@ def run_full_system_e2e(duration=3.0, timestep=1/10):
     agent = SimpleAgent()
     print("Starting full system E2E test...")
     start_time = time.time()
+    step = 0
     while time.time() - start_time < duration:
         obs = interface.get_observation()
         actions = agent.act(obs)
         for action in actions:
+            # Only print keyboard and mouse actions
+            if action.get('type') in ('keyboard', 'mouse'):
+                print(f"Step {step}: Sending {action['type'].capitalize()} Action: {action}")
             interface.send_action(action)
+        step += 1
         time.sleep(timestep)
     print("Full system E2E test completed.")
 
