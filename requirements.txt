@@ -3,3 +3,9 @@ sounddevice
 scipy
 pynput
 psycopg2
+pytesseract
+opencv-contrib-python # cv2
+numpy
+pandas
+psutil
+gputil

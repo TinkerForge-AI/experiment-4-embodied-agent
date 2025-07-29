@@ -1,3 +1,38 @@
+import numpy as np
+
+def decode_video_frame_bytes(video_frame_bytes, shape=None, dtype=np.uint8):
+    """
+    Decodes video_frame bytes to a numpy array (image).
+    If shape is provided, assumes raw array; otherwise, tries to decode as compressed image.
+    Args:
+        video_frame_bytes: bytes or memoryview containing image data.
+        shape: tuple, if known (e.g., (480, 640, 3)) for raw arrays.
+        dtype: numpy dtype, default np.uint8.
+    Returns:
+        frame: numpy array (image) or None if decoding fails.
+    """
+    # Convert memoryview to bytes if needed
+    if isinstance(video_frame_bytes, memoryview):
+        print(f"[DEBUG] Converting memoryview to bytes (length: {len(video_frame_bytes)})")
+        video_frame_bytes = video_frame_bytes.tobytes()
+    if shape is not None:
+        try:
+            print(f"[DEBUG] Attempting to reshape buffer to shape {shape} and dtype {dtype} (buffer length: {len(video_frame_bytes)})")
+            frame = np.frombuffer(video_frame_bytes, dtype=dtype).reshape(shape)
+            print(f"[DEBUG] Successfully reshaped raw video_frame: {frame.shape}, dtype: {frame.dtype}")
+            return frame
+        except Exception as e:
+            print(f"[ERROR] Could not reshape raw video_frame: {e}")
+            return None
+    else:
+        print(f"[DEBUG] Attempting to decode as compressed image (buffer length: {len(video_frame_bytes)})")
+        nparr = np.frombuffer(video_frame_bytes, np.uint8)
+        frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+        if frame is None:
+            print(f"[ERROR] Could not decode video_frame bytes to image. First 20 bytes: {video_frame_bytes[:20]}")
+        else:
+            print(f"[DEBUG] Successfully decoded image: shape {frame.shape}, dtype: {frame.dtype}")
+        return frame
 """
 Visual Perception Module Scaffold
 - Processes raw visual input (e.g., frames, images)
@@ -24,13 +59,35 @@ import random
 
 class VisualPerception:
     def __init__(self):
+        # For periodic object detection
+        self._last_object_detection_time = 0.0
+        self._last_detected_objects = []
         # Load YOLO model (YOLOv3 as example)
         # Paths to YOLO weights and config (update these as needed)
-        self.yolo_weights = "yolov3.weights"
-        self.yolo_cfg = "yolov3.cfg"
+        self.yolo_weights = "yolov4-tiny.weights"
+        self.yolo_cfg = "yolov4-tiny.cfg"
         self.yolo_classes = "coco.names"
         try:
             self.net = cv2.dnn.readNet(self.yolo_weights, self.yolo_cfg)
+            # Try to enable CUDA backend for GPU acceleration if available
+            cuda_available = False
+            try:
+                cuda_available = hasattr(cv2, 'cuda') and cv2.cuda.getCudaEnabledDeviceCount() > 0
+            except Exception:
+                cuda_available = False
+            if cuda_available:
+                try:
+                    self.net.setPreferableBackend(cv2.dnn.DNN_BACKEND_CUDA)
+                    self.net.setPreferableTarget(cv2.dnn.DNN_TARGET_CUDA)
+                    print("[INFO] OpenCV DNN using CUDA backend for YOLO object detection.")
+                except Exception as e:
+                    print(f"[INFO] Could not enable CUDA backend for OpenCV DNN: {e}\nFalling back to CPU.")
+                    self.net.setPreferableBackend(cv2.dnn.DNN_BACKEND_DEFAULT)
+                    self.net.setPreferableTarget(cv2.dnn.DNN_TARGET_CPU)
+            else:
+                print("[INFO] CUDA not available in OpenCV or no CUDA device found. Using CPU for YOLO object detection.")
+                self.net.setPreferableBackend(cv2.dnn.DNN_BACKEND_DEFAULT)
+                self.net.setPreferableTarget(cv2.dnn.DNN_TARGET_CPU)
             with open(self.yolo_classes, "r") as f:
                 self.classes = [line.strip() for line in f.readlines()]
         except Exception as e:
@@ -38,23 +95,80 @@ class VisualPerception:
             self.net = None
             self.classes = []
 
-    def process_frame(self, frame):
+    def process_frame(self, frame, frame_timestamp=None):
         """
-        Process a raw video frame and extract features.
+        Process a raw video frame and extract features, recording lag for each feature.
         Args:
             frame: Raw image/frame data (could be numpy array, etc.)
+            frame_timestamp: float or datetime, time when frame was captured (for lag calculation)
         Returns:
-            observation: dict with high-level features
+            observation: dict with high-level features and per-feature lag (in seconds)
         """
+        import time
+        t_start = time.time()
+        if frame_timestamp is None:
+            # Use current time as fallback
+            frame_timestamp = t_start
         observation = {}
-        observation['edges'] = self.detect_edges(frame)
-        observation['dominant_color'] = self.analyze_color(frame)
-        observation['motion_detected'] = self.detect_motion(frame)
-        observation['change_detected'] = self.detect_change(frame)
-        observation['light_dark'] = self.light_dark_adaptation(frame)
-        observation['visual_attention'] = self.visual_attention(frame)
-        observation['text'] = self.read_text(frame)
-        observation['objects'] = self.recognize_objects(frame)
+        # Each feature: record start, end, and lag
+        def timed_feature(fn, *args, **kwargs):
+            t0 = time.time()
+            result = fn(*args, **kwargs)
+            t1 = time.time()
+            lag = t1 - frame_timestamp if isinstance(frame_timestamp, (int, float)) else (t1 - frame_timestamp.timestamp())
+            return {'value': result, 'lag': lag}
+
+
+        observation['edges'] = timed_feature(self.detect_edges, frame)
+        observation['dominant_color'] = timed_feature(self.analyze_color, frame)
+        observation['motion_detected'] = timed_feature(self.detect_motion, frame)
+        observation['change_detected'] = timed_feature(self.detect_change, frame)
+        observation['light_dark'] = timed_feature(self.light_dark_adaptation, frame)
+        observation['visual_attention'] = timed_feature(self.visual_attention, frame)
+        observation['text'] = timed_feature(self.read_text, frame)
+
+        # Periodic object detection every 1.5 seconds
+        now = time.time()
+        if (now - self._last_object_detection_time) >= 1.5:
+            self._last_detected_objects = self.recognize_objects(frame)
+            self._last_object_detection_time = now
+        # Use the last detected objects for skipped frames
+        # Lag is now time since last detection, not time since frame capture
+        observation['objects'] = {'value': self._last_detected_objects, 'lag': now - self._last_object_detection_time}
+        observation['frame_timestamp'] = frame_timestamp
+
+        t_end = time.time()
+        print(f"[DEBUG] Perception processing time: {t_end - t_start:.4f}s (frame timestamp: {frame_timestamp})")
+
+        # System performance monitoring
+        try:
+            import psutil
+            try:
+                import GPUtil
+                gpus = GPUtil.getGPUs()
+            except ImportError:
+                GPUtil = None
+                gpus = []
+            print("[SYSTEM] Hardware performance:")
+            vm = psutil.virtual_memory()
+            print(f"  RAM: {vm.used / (1024**3):.2f} GB used / {vm.total / (1024**3):.2f} GB total ({vm.percent}%)")
+            cpu_percent = psutil.cpu_percent(interval=None)
+            print(f"  CPU: {cpu_percent:.1f}% usage")
+            try:
+                load1, load5, load15 = psutil.getloadavg()
+                print(f"  Load average (1/5/15 min): {load1:.2f} / {load5:.2f} / {load15:.2f}")
+            except (AttributeError, OSError):
+                pass
+            if gpus:
+                for gpu in gpus:
+                    print(f"  GPU {gpu.id}: {gpu.name}, load={gpu.load*100:.1f}%, VRAM used={gpu.memoryUsed}MB / {gpu.memoryTotal}MB ({gpu.memoryUtil*100:.1f}%)")
+            elif GPUtil is not None:
+                print("  No GPUs detected.")
+            else:
+                print("  GPUtil not installed (no GPU/VRAM info). To enable: pip install gputil")
+        except Exception as e:
+            print(f"[WARN] Could not print system info: {e}")
+
         return observation
     
     def detect_change(self, frame):
@@ -268,14 +382,18 @@ class VisualPerception:
         return detected_objects
 
 if __name__ == "__main__":
-    vp = VisualPerception()
-    # Load a test image
-    image_path = "test_image.jpg"  # Change to your image filename
-    frame = cv2.imread(image_path)
-    if frame is None:
-        print(f"Failed to load image: {image_path}")
-    else:
-        obs = vp.process_frame(frame)
-        print("Observation from image:")
-        for k, v in obs.items():
-            print(f"{k}: {v}")
+    # Example usage: decode a video_frame_bytes (from DB or file) and process once
+    # For demonstration, load from file as bytes (simulate DB retrieval)
+    # image_path = "test_image.jpg"
+    # with open(image_path, "rb") as f:
+    #     video_frame_bytes = f.read()
+    # frame = decode_video_frame_bytes(video_frame_bytes)
+    # if frame is None:
+    #     print(f"Failed to decode image bytes.")
+    # else:
+    #     vp = VisualPerception()
+    #     obs = vp.process_frame(frame)
+    #     print("Observation from image:")
+    #     for k, v in obs.items():
+    #         print(f"{k}: {v}")
+    pass

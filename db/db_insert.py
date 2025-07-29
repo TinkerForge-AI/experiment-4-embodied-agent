@@ -6,6 +6,7 @@ Functions to insert AgentObservation data from input_orchestrator into PostgreSQ
 
 import psycopg2
 import json
+import numpy as np
 import datetime
 import os
 from dotenv import load_dotenv
@@ -28,6 +29,15 @@ def insert_observation(conn, observation):
     """
     video_frame = observation.get('video_frame')
     audio_chunk = observation.get('audio_chunk')
+    # Track shape and dtype for video_frame if it's a numpy array
+    video_frame_shape = None
+    video_frame_dtype = None
+    if isinstance(video_frame, np.ndarray):
+        video_frame_shape = video_frame.shape
+        video_frame_dtype = str(video_frame.dtype)
+        video_frame_bytes = video_frame.tobytes()
+    else:
+        video_frame_bytes = video_frame
     print(f"[DB DEBUG] Inserting observation:")
     print(f"  timestamp: {observation['timestamp']}")
     print(f"  video_frame type: {type(video_frame)}, length: {len(video_frame) if video_frame is not None else 'NULL'}")
@@ -35,17 +45,23 @@ def insert_observation(conn, observation):
     print(f"  keyboard_state: {observation.get('keyboard_state')}")
     print(f"  mouse_state: {observation.get('mouse_state')}")
     print(f"  events: {observation.get('events')}")
+    audio_shape = observation.get('audio_shape')
+    audio_dtype = observation.get('audio_dtype')
     with conn.cursor() as cur:
         cur.execute(
             """
             INSERT INTO agent_observations (
-                timestamp, video_frame, audio_chunk, keyboard_state, mouse_state, events
-            ) VALUES (%s, %s, %s, %s, %s, %s)
+                timestamp, video_frame, video_frame_shape, video_frame_dtype, audio_chunk, audio_shape, audio_dtype, keyboard_state, mouse_state, events
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """,
             (
                 observation['timestamp'],
-                psycopg2.Binary(video_frame) if video_frame is not None else None,
+                psycopg2.Binary(video_frame_bytes) if video_frame_bytes is not None else None,
+                json.dumps(video_frame_shape) if video_frame_shape is not None else None,
+                video_frame_dtype,
                 audio_chunk.tobytes() if audio_chunk is not None else None,
+                json.dumps(audio_shape) if audio_shape is not None else None,
+                audio_dtype,
                 json.dumps(observation.get('keyboard_state')),
                 json.dumps(observation.get('mouse_state')),
                 json.dumps(observation.get('events'))
@@ -68,10 +84,13 @@ def test_db_insert_and_retrieve():
                 self.events = events
 
         now = datetime.datetime.utcnow()
+        # Use a real numpy array for video_frame to test shape/dtype tracking
+        video_frame = np.random.randint(0, 255, (480, 640, 3), dtype=np.uint8)
+        audio_chunk = np.random.randint(-32768, 32767, (48000, 2), dtype=np.int16)  # 1 sec stereo audio at 48kHz
         obs = AgentObservation(
             timestamp=now,
-            video_frame=b'test_image_bytes',
-            audio_chunk=b'test_audio_bytes',
+            video_frame=video_frame,
+            audio_chunk=audio_chunk,
             keyboard_state={'W': 1.0},
             mouse_state={'buttons': {'left': 0.5}, 'position': (100, 200)},
             events=[('20250723_120000_000000', 'key_press', 'W')]

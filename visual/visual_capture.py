@@ -50,19 +50,50 @@ class VisualInputCapture:
         with mss.mss() as sct:
             end_time = time.time() + duration
             while time.time() < end_time:
+                t0 = time.time()
                 img = sct.grab(self.region)
-                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S_%f')
-                frame_path = os.path.join(self.output_dir, f"frame_{timestamp}.png")
+                timestamp = t0
+                frame_path = os.path.join(self.output_dir, f"frame_{datetime.now().strftime('%Y%m%d_%H%M%S_%f')}.png")
                 mss.tools.to_png(img.rgb, img.size, output=frame_path)
-                # Here you would process the frame for training
-                # For demo, we'll just remove it after a short delay
+                print(f"[DEBUG] Frame captured in {time.time() - t0:.4f}s at timestamp {timestamp}")
                 time.sleep(1.0 / self.frame_rate)
                 os.remove(frame_path)
+
+    def stream_frames(self, callback, duration=None):
+        """
+        Continuously capture frames and call callback(frame, timestamp) for each.
+        If duration is set, stream for that many seconds; else, run until interrupted.
+        """
+        import traceback
+        import numpy as np
+        with mss.mss() as sct:
+            start_time = time.time()
+            try:
+                while True:
+                    t0 = time.time()
+                    img = sct.grab(self.region)
+                    # Convert ScreenShot to numpy array (H, W, 3, uint8)
+                    frame = np.array(img)
+                    # mss returns BGRA; convert to BGR for OpenCV compatibility
+                    if frame.shape[2] == 4:
+                        frame = frame[:, :, :3]
+                    timestamp = t0
+                    print(f"[DEBUG] Frame captured in {time.time() - t0:.4f}s at timestamp {timestamp}")
+                    callback(frame, timestamp)
+                    if duration and (time.time() - start_time) > duration:
+                        break
+                    time.sleep(max(0, 1.0 / self.frame_rate - (time.time() - t0)))
+            except KeyboardInterrupt:
+                print("[VisualInputCapture] Visual streaming stopped by user.")
+            except Exception as e:
+                print(f"[ERROR] Exception in stream_frames: {e}\n{traceback.format_exc()}")
 
 if __name__ == "__main__":
     # Example region: top-left corner, 1280x720
     region = {"top": 0, "left": 0, "width": 1280, "height": 720}
-    # Use absolute path for output_dir to avoid issues when running as module
     output_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "training_data", "frames"))
     capture = VisualInputCapture(region, output_dir, frame_rate=10)
-    capture.capture_frames(duration=5)
+    print("[INFO] Starting visual streaming test. Press Ctrl+C to stop.")
+    def dummy_callback(frame, timestamp):
+        print(f"[DEBUG] Frame at {timestamp}, shape: {getattr(frame, 'size', None)}")
+    capture.stream_frames(dummy_callback, duration=5)
